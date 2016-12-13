@@ -90,7 +90,8 @@ class FeatureOTFCompiler(object):
         features = [existing]
         for name, text in sorted(autoFeatures.items()):
             features.append(text)
-        self.features = "\n\n".join(features)
+        features.append(self.buildTableGDEF())
+        self.features = "\n\n".join(filter(None, features))
 
     def writeFeatures_kern(self):
         """
@@ -116,6 +117,27 @@ class FeatureOTFCompiler(object):
             self.font, self.anchorPairs, self.mkmkAnchorPairs,
             self.ligaAnchorPairs)
         return writer.write(doMark, doMkmk)
+
+    def buildTableGDEF(self):
+        """Returns a string for a computed `table GDEF` statement, or None"""
+        carets = self.getLigatureCaretPositions()
+        if not carets:
+            return None
+        lines = ["table GDEF {"]
+        for glyph, caretPos in sorted(carets.items()):
+            lines.append("  LigatureCaretByPos %s %s;" %
+                         (glyph, " ".join([str(p) for p in caretPos])))
+        lines.append("} GDEF;")
+        return "\n".join(lines)
+
+    def getLigatureCaretPositions(self):
+        """Returns ligature caret positions such as {'f_f_i': (123, 789)}"""
+        carets = {}
+        for glyph in self.font:
+            for anchor in glyph.anchors:
+                if anchor.name is not None and anchor.name.startswith("caret_"):
+                    carets.setdefault(glyph.name, []).append(anchor.x)
+        return {g: tuple(sorted(caretPos)) for g, caretPos in carets.items()}
 
     def setupAnchorPairs(self):
         """
