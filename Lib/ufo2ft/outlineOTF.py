@@ -333,18 +333,25 @@ class OutlineCompiler(object):
         if nameVals[6]:
             nameVals[6] = normalizeStringForPostscript(nameVals[6])
 
-        for nameId in sorted(nameVals.keys()):
-            nameVal = nameVals[nameId]
-            if not nameVal:
-                continue
-            nameVal = tounicode(nameVal, encoding='ascii')
-            platformId = 3
-            platEncId = 10 if _isNonBMP(nameVal) else 1
-            langId = 0x409
-            # Set built name record if not set yet
-            if name.getName(nameId, platformId, platEncId, langId):
-                continue
-            name.setName(nameVal, nameId, platformId, platEncId, langId)
+        platformIds = [1, 3]
+
+        for platformId in platformIds:
+            if platformId == 1:
+                langId = 0x0
+                platEncId = 0
+            elif platformId == 3:
+                langId = 0x409
+                platEncId = 10 if _isNonBMP(nameVal) else 1
+
+            for nameId in sorted(nameVals.keys()):
+                nameVal = nameVals[nameId]
+                if not nameVal:
+                    continue
+                nameVal = tounicode(nameVal, encoding='ascii')
+                # Set built name record if not set yet
+                if name.getName(nameId, platformId, platEncId, langId):
+                    continue
+                name.setName(nameVal, nameId, platformId, platEncId, langId)
 
     def setupTable_maxp(self):
         """
